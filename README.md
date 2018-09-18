@@ -15,9 +15,11 @@ Call `run-check.sh <directory_name>` on a valid git directory. This can also be 
 
 `check-for-secrets` simply passes on all arguments sent to `trufflehog`, so you can override the defaults chosen by adding them in as arguments.
 
-For instance, the high-entropy check is disabled by default because it is very time-intensive. To add it back in, pass ``--entropy 1``, for instance:
+For instance, if you want to only search one commit back in each branch, add ``--max_depth 1``:
 
-`run-check.sh --entropy 1 ../dirty-duck`
+`run-check.sh --max_depth 1 ../dirty-duck`
+
+See the ['trufflehog'](https://github.com/dxa4481/truffleHog) repo for all such options.
 
 ## Trufflehog notes
 

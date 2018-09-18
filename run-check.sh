@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Checking for secrets. Passing @$ to trufflehog. This may come up with false positives, use your judgment on each result."
+echo "Checking for secrets. Passing $@ to trufflehog. This may come up with false positives, use your judgment on each result."
 
 echo "Checking for trufflehog..."
 
@@ -18,4 +18,4 @@ if ! [ -x "$(command -v trufflehog)" ]; then
 fi
 
 echo "running trufflehog"
-trufflehog --entropy 0 --regex --rules trufflehog_regexes.json $@
+trufflehog --entropy 1 --regex --rules trufflehog_regexes.json $@
