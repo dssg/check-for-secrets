@@ -7,6 +7,8 @@ Sometimes we check secrets into Github, which we should never do. `check-for-sec
 - IP addresses
 - AWS addresses
 - Non-empty jupyter notebook output
+- Files with data (csv extensions?) [TODO]
+- graphs (for now any images?) [TODO]
 
 
 Call `run-check.sh <directory_name>` on a valid git directory. This can also be a github url. The script will try to install the Python package ['trufflehog'](https://github.com/dxa4481/truffleHog) locally if you don't have it, and then check the given directory for commits containing secrets.
