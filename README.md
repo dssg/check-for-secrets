@@ -9,7 +9,7 @@ Sometimes we check secrets into Github, which we should never do. `check-for-sec
 - Non-empty jupyter notebook output
 
 
-Call `run-check.sh <directory_name>` on a valid git directory. This can also be a github url. The script will try to install the Python package ['trufflehog'](https://github.com/dxa4481/truffleHog) locally if you don't have it, and then check the given directory for commits containing secrets.
+Call `audit-repo <directory_name>` on a valid git directory. This can also be a github url. The script will try to install the Python package ['trufflehog'](https://github.com/dxa4481/truffleHog) locally if you don't have it, and then check the given directory for commits containing secrets.
 
 ## Advanced Use
 
@@ -17,7 +17,7 @@ Call `run-check.sh <directory_name>` on a valid git directory. This can also be 
 
 For instance, if you want to only search one commit back in each branch, add ``--max_depth 1``:
 
-`run-check.sh --max_depth 1 ../dirty-duck`
+`audit-repo --max_depth 1 ../dirty-duck`
 
 See the ['trufflehog'](https://github.com/dxa4481/truffleHog) repo for all such options.
 

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+echo "Checking for secrets. Passing $@ to trufflehog. This may come up with false positives, use your judgment on each result."
+
+echo "Checking for trufflehog..."
+
+if ! command -v trufflehog &>/dev/null; then
+    read -p "trufflehog not installed. do you want to install it (via 'pip install trufflehog --user')? y[n] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]
+    then
+        echo "Exiting script as it requires trufflehog. You may install through any manner you wish, and then run this script again."
+        exit 1 || return 1
+    else
+        echo "Installing trufflehog"
+        pip install trufflehog --user || exit $?
+    fi
+fi
+
+echo "running trufflehog"
+trufflehog --entropy 1 --regex --rules trufflehog_regexes.json $@
