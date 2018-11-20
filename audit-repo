@@ -10,7 +10,7 @@ if ! command -v trufflehog &>/dev/null; then
     if [[ ! $REPLY =~ ^[Yy]$ ]]
     then
         echo "Exiting script as it requires trufflehog. You may install through any manner you wish, and then run this script again."
-        exit 1 || return 1
+        exit 1
     else
         echo "Installing trufflehog"
         pip install trufflehog --user || exit $?
