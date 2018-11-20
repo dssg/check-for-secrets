@@ -11,15 +11,17 @@ Sometimes we check secrets into Github, which we should never do. `check-for-sec
 - graphs (for now any images?) [TODO]
 
 
-Call `run-check.sh <directory_name>` on a valid git directory. This can also be a github url. The script will try to install the Python package ['trufflehog'](https://github.com/dxa4481/truffleHog) locally if you don't have it, and then check the given directory for commits containing secrets.
+Call `audit-repo <directory_name>` on a valid git directory. This can also be a github url. The script will try to install the Python package ['trufflehog'](https://github.com/dxa4481/truffleHog) locally if you don't have it, and then check the given directory for commits containing secrets.
 
 ## Advanced Use
 
 `check-for-secrets` simply passes on all arguments sent to `trufflehog`, so you can override the defaults chosen by adding them in as arguments.
 
-For instance, the high-entropy check is disabled by default because it is very time-intensive. To add it back in, pass ``--entropy 1``, for instance:
+For instance, if you want to only search one commit back in each branch, add ``--max_depth 1``:
 
-`run-check.sh --entropy 1 ../dirty-duck`
+`audit-repo --max_depth 1 ../dirty-duck`
+
+See the ['trufflehog'](https://github.com/dxa4481/truffleHog) repo for all such options.
 
 ## Trufflehog notes
 
