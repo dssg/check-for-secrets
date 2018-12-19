@@ -1,21 +1,33 @@
 #!/bin/bash
 
-echo "Checking for secrets. Passing $@ to trufflehog. This may come up with false positives, use your judgment on each result."
+REPO_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
-echo "Checking for trufflehog..."
+INSTALL_TRUFFLE="pip install --user trufflehog"
+TRUFFLE_COMMAND="trufflehog --entropy 1 --regex --rules $REPO_DIR/trufflehog_regexes.json $@"
+
+install_truffle() {
+    eval "$INSTALL_TRUFFLE"
+}
+
+run_truffle() {
+    eval "$TRUFFLE_COMMAND"
+}
 
 if ! command -v trufflehog &>/dev/null; then
-    read -p "trufflehog not installed. do you want to install it (via 'pip install trufflehog --user')? y[n] " -n 1 -r
+    read -p "trufflehog not installed -- do you want to install it? { $INSTALL_TRUFFLE } [yN] " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]
     then
-        echo "Exiting script as it requires trufflehog. You may install through any manner you wish, and then run this script again."
+        echo "Exiting -- trufflehog required."
+        echo "You may install trufflehog through any manner you wish, and then run this script again."
         exit 1
     else
-        echo "Installing trufflehog"
-        pip install trufflehog --user || exit $?
+        echo "Installing trufflehog."
+        install_truffle || exit $?
+        echo
     fi
 fi
 
-echo "running trufflehog"
-trufflehog --entropy 1 --regex --rules trufflehog_regexes.json $@
+echo "Checking for secrets. This may come up with false positives -- use your judgment on each result."
+echo "$TRUFFLE_COMMAND"
+run_truffle
