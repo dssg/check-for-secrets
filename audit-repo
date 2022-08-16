@@ -16,11 +16,11 @@ MAGENTA="$(tput setaf 5 2>/dev/null || printf '')"
 NO_COLOR="$(tput sgr0 2>/dev/null || printf '')"
 
 # RegExes
-PASSWORD_IN_URL='"//[^/\s:]+:[^/\s:]+@",'
-OUTPUTS_IN_NOTEBOOK='"outputs":\s+\['
+PASSWORD_IN_URL='//[^/\s:]+:[^/\s:]+@'
+OUTPUTS_IN_NOTEBOOK='\"outputs\":\s+\['
 AWS_URL='\S+.amazonaws.com'
 IP_ADDRESS='\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
-REGEXES=($PASSWORD_IN_URL $OUTPUTS_IN_NOTEBOOK $AWS_URL $IP_ADDRESS)
+REGEXES=("$PASSWORD_IN_URL" "$OUTPUTS_IN_NOTEBOOK" "$AWS_URL" "$IP_ADDRESS")
 
 info() {
   printf '%s\n' "${BOLD}${GREY}>${NO_COLOR} $*"
@@ -64,14 +64,14 @@ verify_bwrap_installed_or_exit() {
 }
 
 verify_grep_is_installed_or_exit() {
-    if has ugrep ; then
-        GREP_ARGS=(-G --stats --hidden -E)
+    if has ugrep2 ; then
+        GREP_ARGS=( -G --stats --hidden -E )
         GREP="ugrep"
     elif has ripgrep; then
-        GREP_ARGS=(--hidden --color always --count)
+        GREP_ARGS=( --hidden --color always --count )
         GREP="ripgrep"
     elif has grep; then
-        GREP_ARGS=(-E --exclude-dir=.git -r --count)
+        GREP_ARGS=( -E -R -s -l --exclude-dir=.git )
         GREP="grep"
     else
         error "No grep installed neither some of the other supported similar tools (e.g. ugrep or ripgrep), aborting audit!"
@@ -118,11 +118,19 @@ usage() {
 clone() {
     git_repo="$1"
     temp_dir="$2"
-    echo git clone "${git_repo}" "${temp_dir}"
     git clone "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
 }
 
+calculate_delta() {
+   delta=$(( $(date -d "$1" +%s) - $(date -d "$2" +%s) ))
+   printf '%s' $(date -d "@$delta" -u +%H:%M:%S)
+}
+
 audit_one() {
+    local   initial_timestamp="$(date)"
+
+    info "Started at $(date +'%Y-%m-%d %T')"
+
     git_url="$1"
 
     git_repo=$(basename $git_url .git)
@@ -132,22 +140,33 @@ audit_one() {
     info "Cloning repository $1"
     clone "${git_url}" "${directory}"
 
-    info "Running trufflehog (checking for passwords, keys, etc)"
-    echo "trufflehog git file:///${directory}"
+    #trufflehog git file:///"${directory}"
+    completed "Running trufflehog (checking for passwords, keys, etc) completed"
 
-    info "Auditing the current repository's commit"
-    for rx in ${REGEXES[@]}; do
-        echo "${GREP} ${GREP_ARGS[@]} '${rx}' ${directory}"
+    info "Auditing repository's working directory"
+
+    for rx in "${REGEXES[@]}"; do
+        #echo $("${GREP} ${GREP_ARGS[@]} '\"${rx}\"' ${directory}")
+        #echo $("${GREP}" "${GREP_ARGS[@]}" "${rx}" "${directory}" | xargs -L 1 basename)
+        echo "$(${GREP} ${GREP_ARGS[@]} ${rx} ${directory})"
+        completed "Completed checks for '${rx}'"
     done
 
-    info "Searching for non-empty data or image files (${ITALIC}csv, txt, zip, png${NO_COLOR})"
-    echo "find -type f \( -name '*.csv' -o -name '*.txt' -o -name '*.zip' -o -name '*.png \) ! -size 0"
+    find "${directory}" -type f \( -name '*.csv' -o -name '*.txt' -o -name '*.zip' -o -name '*.png' \) ! -size 0
+    completed "Searching for non-empty data or image files (${ITALIC}csv, txt, zip, png${NO_COLOR}) completed"
 
     info "Auditing git's commits history"
+
     cd "${directory}"
     for rx in "${REGEXES[@]}"; do
-        echo "git rev-list --all | GIT_PAGER=cat xargs git grep -c '$rx'"
+        #git rev-list --all | GIT_PAGER=cat xargs git grep -c "$rx"
+	#git grep -E "${rx}" $(git rev-list --all)
+        completed "Completed checks for '${rx}'"
     done
+
+    local final_timestamp="$(date)"
+    delta=$(calculate_delta "${final_timestamp}" "${initial_timestamp}")
+    completed "Audition for ${BOLD}${git_repo} ${NO_COLOR} completed in ${delta}"
 }
 
 audit_all() {
@@ -157,7 +176,6 @@ audit_all() {
     for git_repo in $GIT_REPOS; do
         info "Auditing ${ITALIC}${git_repo} ${NO_COLOR}"
         audit_one ${git_repo}
-        completed "Audition for ${BOLD}${git_repo} ${NO_COLOR} completed"
     done
 }
 
