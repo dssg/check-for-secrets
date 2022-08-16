@@ -64,12 +64,12 @@ verify_bwrap_installed_or_exit() {
 }
 
 verify_grep_is_installed_or_exit() {
-    if has ugrep2 ; then
-        GREP_ARGS=( -G --stats --hidden -E )
+    if has ugrep ; then
+        GREP_ARGS=( -G -l --stats --hidden -E )
         GREP="ugrep"
     elif has ripgrep; then
-        GREP_ARGS=( --hidden --color always --count )
-        GREP="ripgrep"
+        GREP_ARGS=( --hidden -l --color always --count )
+        GREP="rg"
     elif has grep; then
         GREP_ARGS=( -E -R -s -l --exclude-dir=.git )
         GREP="grep"
