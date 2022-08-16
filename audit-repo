@@ -52,8 +52,6 @@ verify_trufflehog_installed_or_exit() {
     fi
 }
 
-
-
 verify_bwrap_installed_or_exit() {
     if ! has bwrap ; then
         error "Bwrap is not installed, aborting audit!"
@@ -67,10 +65,13 @@ verify_bwrap_installed_or_exit() {
 
 verify_grep_is_installed_or_exit() {
     if has ugrep ; then
+        GREP_ARGS=(-G --stats --hidden -E)
         GREP="ugrep"
     elif has ripgrep; then
+        GREP_ARGS=(--hidden --color always --count)
         GREP="ripgrep"
     elif has grep; then
+        GREP_ARGS=(-E --exclude-dir=.git -r --count)
         GREP="grep"
     else
         error "No grep installed neither some of the other supported similar tools (e.g. ugrep or ripgrep), aborting audit!"
@@ -89,6 +90,16 @@ verify_git_is_installed_or_exit() {
     fi
 }
 
+get_tmpdir() {
+  git_repo="$1"
+  if has mktemp; then
+    printf "%s/%s" "$(mktemp -d)" "${git_repo}"
+  else
+    # No really good options here--let's pick a default + hope
+    printf "/tmp/audit/%s" "${git_repo}"
+  fi
+}
+
 usage() {
   printf "%s\n" \
     "audit-repo.sh [-vfhr] [--verbose] [--force] [--help] [--repositories[=]${ITALIC}repositories${NO_COLOR}...]" \
@@ -105,31 +116,38 @@ usage() {
 }
 
 clone() {
-    git clone $1 2&>/dev/null  && completed "cloning $1 succeded" || error "cloning $1 failed"; exit 1
+    git_repo="$1"
+    temp_dir="$2"
+    echo git clone "${git_repo}" "${temp_dir}"
+    git clone "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
 }
 
 audit_one() {
+    git_url="$1"
 
-    info "Cloning repository $1 to be audited"
-    clone $1
+    git_repo=$(basename $git_url .git)
 
-    info "Running trufflehog in $1 (checking for passwords, keys, etc)"
-    echo "trufflehog git $1"
+    directory=$(get_tmpdir "$git_repo")
+
+    info "Cloning repository $1"
+    clone "${git_url}" "${directory}"
+
+    info "Running trufflehog (checking for passwords, keys, etc)"
+    echo "trufflehog git file:///${directory}"
 
     info "Auditing the current repository's commit"
     for rx in ${REGEXES[@]}; do
-        echo "ugrep -G --stats --hidden  -E '${rx}'"
+        echo "${GREP} ${GREP_ARGS[@]} '${rx}' ${directory}"
     done
 
-    info "Searching for non-empty data files (${ITALIC}csv, txt, zip, png${NO_COLOR})"
+    info "Searching for non-empty data or image files (${ITALIC}csv, txt, zip, png${NO_COLOR})"
     echo "find -type f \( -name '*.csv' -o -name '*.txt' -o -name '*.zip' -o -name '*.png \) ! -size 0"
 
     info "Auditing git's commits history"
+    cd "${directory}"
     for rx in "${REGEXES[@]}"; do
         echo "git rev-list --all | GIT_PAGER=cat xargs git grep -c '$rx'"
     done
-
-
 }
 
 audit_all() {
