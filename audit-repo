@@ -22,6 +22,14 @@ AWS_URL='\S+.amazonaws.com'
 IP_ADDRESS='\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
 REGEXES=("$PASSWORD_IN_URL" "$OUTPUTS_IN_NOTEBOOK" "$AWS_URL" "$IP_ADDRESS")
 
+declare -A RXS=(
+    "passwords in URLs"                   "$PASSWORD_IN_URL"
+    "presence of outputs in notebooks"    "$OUTPUTS_IN_NOTEBOOK"
+    "presence of AWS URLs"                "$AWS_URL"
+    "presence of IP addresses"            "$IP_ADDRESS"
+)
+
+
 info() {
   printf '%s\n' "${BOLD}${GREY}>${NO_COLOR} $*"
 }
@@ -142,11 +150,11 @@ audit_one() {
 
     info "Auditing repository's working directory"
 
-    for rx in "${REGEXES[@]}"; do
+    for rx in "${!RXS[@]}"; do
         #echo $("${GREP} ${GREP_ARGS[@]} '\"${rx}\"' ${directory}")
         #echo $("${GREP}" "${GREP_ARGS[@]}" "${rx}" "${directory}" | xargs -L 1 basename)
-        echo "$(${GREP} ${GREP_ARGS[@]} ${rx} ${directory})"
-        completed "Completed checks for '${rx}'"
+        echo "$(${GREP} ${GREP_ARGS[@]} ${RXS[$rx]} ${directory})"
+        completed "Completed checks for detecting ${rx} (${RXS[$rx]})"
     done
 
     find "${directory}" -type f \( -name '*.csv' -o -name '*.txt' -o -name '*.zip' -o -name '*.png' \) ! -size 0
@@ -155,10 +163,10 @@ audit_one() {
     info "Auditing git's commits history"
 
     cd "${directory}"
-    for rx in "${REGEXES[@]}"; do
+    for rx in "${!RXS[@]}"; do
         #git rev-list --all | GIT_PAGER=cat xargs git grep -c "$rx"
 	#git grep -E "${rx}" $(git rev-list --all)
-        completed "Completed checks for '${rx}'"
+        completed "Completed checks for detecting  ${rx} (${RXS[$rx]})"
     done
 
     trufflehog git file:///"${directory}"
@@ -223,7 +231,7 @@ printf "  %s\n" "${UNDERLINE}Checking dependencies${NO_COLOR}"
 
 verify_grep_is_installed_or_exit
 verify_git_is_installed_or_exit
-verify_trufflehog_installed_or_exit
+#verify_trufflehog_installed_or_exit
 
 printf '\n'
 
