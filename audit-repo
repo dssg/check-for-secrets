@@ -65,10 +65,10 @@ verify_bwrap_installed_or_exit() {
 
 verify_grep_is_installed_or_exit() {
     if has ugrep ; then
-        GREP_ARGS=( -E -l --hidden --color=always -z -R )
+        GREP_ARGS=( -E -l --hidden --color=always -R )
         GREP="ugrep"
     elif has ripgrep; then
-        GREP_ARGS=( -l --hidden -l --color always --count )
+        GREP_ARGS=( -l --hidden --color always )
         GREP="rg"
     elif has grep; then
         GREP_ARGS=( -E -l -R -s --exclude-dir=.git )
@@ -140,9 +140,6 @@ audit_one() {
     info "Cloning repository $1"
     clone "${git_url}" "${directory}"
 
-    #trufflehog git file:///"${directory}"
-    completed "Running trufflehog (checking for passwords, keys, etc) completed"
-
     info "Auditing repository's working directory"
 
     for rx in "${REGEXES[@]}"; do
@@ -163,6 +160,9 @@ audit_one() {
 	#git grep -E "${rx}" $(git rev-list --all)
         completed "Completed checks for '${rx}'"
     done
+
+    trufflehog git file:///"${directory}"
+    completed "Running trufflehog (checking for passwords, keys, etc) completed"
 
     local final_timestamp="$(date)"
     delta=$(calculate_delta "${final_timestamp}" "${initial_timestamp}")
@@ -223,7 +223,7 @@ printf "  %s\n" "${UNDERLINE}Checking dependencies${NO_COLOR}"
 
 verify_grep_is_installed_or_exit
 verify_git_is_installed_or_exit
-#verify_trufflehog_installed_or_exit
+verify_trufflehog_installed_or_exit
 
 printf '\n'
 
