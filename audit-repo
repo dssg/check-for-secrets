@@ -185,7 +185,7 @@ audit_all() {
 
     for git_repo in $GIT_REPOS; do
         info "Auditing ${ITALIC}${git_repo} ${NO_COLOR}"
-        #audit_one ${git_repo}
+        audit_one ${git_repo}
     done
 }
 
