@@ -110,16 +110,18 @@ get_tmpdir() {
 
 usage() {
   printf "%s\n" \
-    "audit-repo.sh [-vfhr] [--verbose] [--force] [--help] [--repositories[=]${ITALIC}repositories${NO_COLOR}...]" \
+    "audit-repo [-h] [--help] [${ITALIC}repository${NO_COLOR}...]" \
     "" \
     "Fetch and check for ${UNDERLINE}${BOLD}secrets${NO_COLOR} in the git repository " \
     "Plase note that this may come up with ${ITALIC}false positives${NO_COLOR} -- use your judgment on each result."
 
+  printf "\n%s\n" "Arguments"
+  printf "\t%s\n\t\t%s\n\n" \
+         "repositories" "One or more repositories to be audited. ${BOLD}${YELLOW}you need to write the full URL path to it${NO_COLOR}" \
+         "" "examples: https://github.com/org/test.git, git@gitlab.com:org/test.git"
+
   printf "\n%s\n" "Options"
   printf "\t%s\n\t\t%s\n\n" \
-    "-v, --verbose" "Enable verbose output for the audit" \
-    "-f, -y, --force, --yes" "Skip the confirmation prompt during installation (will overwrite previous outputs)" \
-    "-r, --repos, --repositories" "List of repositories to audit for secrets leakage" \
     "-h, --help" "Display this help message"
 }
 
@@ -153,7 +155,7 @@ audit_one() {
     for rx in "${!RXS[@]}"; do
         #echo $("${GREP} ${GREP_ARGS[@]} '\"${rx}\"' ${directory}")
         #echo $("${GREP}" "${GREP_ARGS[@]}" "${rx}" "${directory}" | xargs -L 1 basename)
-        echo "$(${GREP} ${GREP_ARGS[@]} ${RXS[$rx]} ${directory})"
+        "$(${GREP} ${GREP_ARGS[@]} ${RXS[$rx]} ${directory})"
         completed "Completed checks for detecting ${rx} (${RXS[$rx]})"
     done
 
@@ -165,7 +167,7 @@ audit_one() {
     cd "${directory}"
     for rx in "${!RXS[@]}"; do
         #git rev-list --all | GIT_PAGER=cat xargs git grep -c "$rx"
-	#git grep -E "${rx}" $(git rev-list --all)
+	git grep -E "${rx}" $(git rev-list --all)
         completed "Completed checks for detecting  ${rx} (${RXS[$rx]})"
     done
 
@@ -183,68 +185,56 @@ audit_all() {
 
     for git_repo in $GIT_REPOS; do
         info "Auditing ${ITALIC}${git_repo} ${NO_COLOR}"
-        audit_one ${git_repo}
+        #audit_one ${git_repo}
     done
 }
 
+# if no arguments are provided, return usage function
+if [ $# -eq 0 ]; then
+    warn  You need to specify the repository to audit
+    printf "\n"
+    usage # run usage function
+    exit 1
+fi
+
+ARGS=$(getopt --options h --long "help" -- "$@")
+
+eval set -- "$ARGS"
 
 # parse argv variables
-while [ "$#" -gt 0 ]; do
+while true; do
  case "$1" in
-  -v | --verbose)
-    VERBOSE=1
-    shift 1
-    ;;
-  -f | -y | --force | --yes)
-    FORCE=1
-    shift 1
-    ;;
   -h | --help)
     usage
     exit
     ;;
-  -r | --repos | --repositories)
-    GIT_REPOS=$2
-    shift 2
-    ;;
-  -v=* | --verbose=*)
-    VERBOSE="${1#*=}"
-    shift 1
-    ;;
-  -f=* | -y=* | --force=* | --yes=*)
-    FORCE="${1#*=}"
-    shift 1
-    ;;
-  -r=* | --repos=* | --repositories=*)
-    GIT_REPOS="${1#*=}"
-    shift 1
+  --)
+    shift ;
+    break
     ;;
   *)
     error "Unknown option: $1"
     usage
     exit 1
     ;;
-  esac
+ esac
+ shift ;
 done
+
+info "Remaining arguments:"
+GIT_REPOS="$*"
+
 
 printf "  %s\n" "${UNDERLINE}Checking dependencies${NO_COLOR}"
 
 verify_grep_is_installed_or_exit
 verify_git_is_installed_or_exit
-#verify_trufflehog_installed_or_exit
+verify_trufflehog_installed_or_exit
 
 printf '\n'
 
 printf "  %s\n" "${UNDERLINE}Configuration${NO_COLOR}"
 info "${BOLD}Repositories to be audited${NO_COLOR}: ${GREEN}${GIT_REPOS}${NO_COLOR}"
-
-# non-empty VERBOSE enables verbose untarring
-if [ -n "${VERBOSE-}" ]; then
-  VERBOSE=v
-  info "${BOLD}Verbose${NO_COLOR}: yes"
-else
-  VERBOSE=
-fi
 
 printf '\n'
 
