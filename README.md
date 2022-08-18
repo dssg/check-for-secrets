@@ -11,7 +11,7 @@ Sometimes we check secrets into Github, which we should never do. `check-for-sec
 - graphs (just checks for PNG files)
 
 
-Call `audit-repo -r <git_repository_name>, ...` . or check all the available options with `audit-repo --help`.
+Call `audit-repo <git_repository_url>, ...` for checking the working directory of the repository or check other available options with `audit-repo --help`.
 
 ## Dependencies
 
