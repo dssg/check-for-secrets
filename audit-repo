@@ -20,13 +20,18 @@ PASSWORD_IN_URL='//[^/\s:]+:[^/\s:]+@'
 OUTPUTS_IN_NOTEBOOK='\"outputs\":\s+\['
 AWS_URL='\.amazonaws\.com'
 IP_ADDRESS='\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
-REGEXES=("$PASSWORD_IN_URL" "$OUTPUTS_IN_NOTEBOOK" "$AWS_URL" "$IP_ADDRESS")
+SSH_PRIVATE_KEY='---BEGIN (RSA|OPENSSH|DSA|EC) PRIVATE KEY---'
+GPG_PRIVATE_KEY='---BEGIN (PGP|GPG) PRIVATE KEY BLOCK---'
+AWS_API_KEY='AKIA[0-9A-Z]{16}'
 
 declare -A RXS=(
     "passwords in URLs"                   "$PASSWORD_IN_URL"
     "presence of outputs in notebooks"    "$OUTPUTS_IN_NOTEBOOK"
     "presence of AWS URLs"                "$AWS_URL"
     "presence of IP addresses"            "$IP_ADDRESS"
+    "presence of private keys (SSH)"      "$SSH_PRIVATE_KEY"
+    "presence of private keys (GPG)"      "$GPG_PRIVATE_KEY"
+    "presence of AWS api keys"            "$AWS_API_KEY"
 )
 
 RUN_TRUFFLEHOG=0
@@ -81,7 +86,7 @@ verify_grep_is_installed_or_exit() {
         GREP_ARGS=( -l --hidden --color always )
         GREP="rg"
     elif has grep; then
-        GREP_ARGS=( -E -l -R -s --exclude-dir=.git )
+        GREP_ARGS=( -E -l -R -s --exclude-dir=.git -e)
         GREP="grep"
     else
         error "No grep installed neither some of the other supported similar tools (e.g. ugrep or ripgrep), aborting audit!"
@@ -179,7 +184,7 @@ audit_one() {
        cd "${directory}"
        for rx in "${!RXS[@]}"; do
            echo ${rx}
-	   echo "$(git grep -l -E "${RXS[$rx]}" $(git rev-list --all))"
+	   echo "$(git grep -l -E -e "${RXS[$rx]}" $(git rev-list --all))"
            completed "Completed checks for detecting  ${rx} (${RXS[$rx]})"
            printf "\n"
        done
