@@ -179,7 +179,7 @@ audit_one() {
        cd "${directory}"
        for rx in "${!RXS[@]}"; do
            echo ${rx}
-	   echo $(git grep -l -E "${RXS[$rx]}" $(git rev-list --all))
+	   echo "$(git grep -l -E "${RXS[$rx]}" $(git rev-list --all))"
            completed "Completed checks for detecting  ${rx} (${RXS[$rx]})"
            printf "\n"
        done
