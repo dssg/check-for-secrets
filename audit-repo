@@ -176,10 +176,11 @@ audit_one() {
 
     printf "\n"
 
-    if [ "${RUN_GIT_HISTORY}" -eq 1 ]; then
-       info "${UNDERLINE}Auditing git's commits history${NO_COLOR}"
+    info "${UNDERLINE}Auditing git's commits history${NO_COLOR}"
 
-       printf "\n"
+    printf "\n"
+
+    if [ "${RUN_GIT_HISTORY}" -eq 1 ]; then
 
        cd "${directory}"
        for rx in "${!RXS[@]}"; do
