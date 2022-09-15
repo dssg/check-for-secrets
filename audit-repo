@@ -220,15 +220,6 @@ audit_one() {
     printf "\n"
 }
 
-audit_all() {
-
-    info "${UNDERLINE}Audition started ${NO_COLOR}"
-
-    for git_repo in $GIT_REPOS; do
-        info "Auditing ${ITALIC}${git_repo} ${NO_COLOR}"
-        audit_one ${git_repo}
-    done
-}
 
 # if no arguments are provided, return usage function
 if [ $# -eq 0 ]; then
