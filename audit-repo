@@ -145,7 +145,7 @@ clone() {
     git_branch="$2"
     temp_dir="$3"
     
-    if [ "${git_branch}" -eq "main" ]; then 
+    if [ "${git_branch}" == "${DEFAULT_BRANCH}" ]; then 
       git clone "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
     else 
       git clone -b "${git_branch}" "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
