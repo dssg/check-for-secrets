@@ -17,7 +17,7 @@ NO_COLOR="$(tput sgr0 2>/dev/null || printf '')"
 
 # RegExes
 PASSWORD_IN_URL='//[^/\s:]+:[^/\s:]+@'
-OUTPUTS_IN_NOTEBOOK='\"outputs\":\s+\['
+OUTPUTS_IN_NOTEBOOK='\"outputs\":\s+\[\s+\{'
 AWS_URL='\.amazonaws\.com'
 IP_ADDRESS='\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
 SSH_PRIVATE_KEY='---BEGIN (RSA|OPENSSH|DSA|EC) PRIVATE KEY---'
@@ -25,13 +25,13 @@ GPG_PRIVATE_KEY='---BEGIN (PGP|GPG) PRIVATE KEY BLOCK---'
 AWS_API_KEY='AKIA[0-9A-Z]{16}'
 
 declare -A RXS=(
-    "passwords in URLs"                   "$PASSWORD_IN_URL"
-    "presence of outputs in notebooks"    "$OUTPUTS_IN_NOTEBOOK"
-    "presence of AWS URLs"                "$AWS_URL"
-    "presence of IP addresses"            "$IP_ADDRESS"
-    "presence of private keys (SSH)"      "$SSH_PRIVATE_KEY"
-    "presence of private keys (GPG)"      "$GPG_PRIVATE_KEY"
-    "presence of AWS api keys"            "$AWS_API_KEY"
+  ["passwords in URLs"]="$PASSWORD_IN_URL"
+  ["presence of outputs in notebooks"]="$OUTPUTS_IN_NOTEBOOK"
+  ["presence of AWS URLs"]="$AWS_URL"
+  ["presence of IP addresses"]="$IP_ADDRESS"
+  ["presence of private keys (SSH)"]="$SSH_PRIVATE_KEY"
+  ["presence of private keys (GPG)"]="$GPG_PRIVATE_KEY"    
+  ["presence of AWS api keys"]="$AWS_API_KEY"
 )
 
 RUN_TRUFFLEHOG=0
@@ -137,6 +137,11 @@ usage() {
 clone() {
     git_repo="$1"
     temp_dir="$2"
+    
+    # temp line to audit the public branches
+    # git clone -b public_branch "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
+    
+    # Auditing main
     git clone "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
 }
 
