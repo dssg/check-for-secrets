@@ -17,7 +17,8 @@ NO_COLOR="$(tput sgr0 2>/dev/null || printf '')"
 
 # RegExes
 PASSWORD_IN_URL='//[^/\s:]+:[^/\s:]+@'
-OUTPUTS_IN_NOTEBOOK='\"outputs\":\s+\[\s+\{'
+# OUTPUTS_IN_NOTEBOOK='\"outputs\":\s+\['
+OUTPUTS_IN_NOTEBOOK='\"outputs\":\s*\[\s*\{'
 AWS_URL='\.amazonaws\.com'
 IP_ADDRESS='\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
 SSH_PRIVATE_KEY='---BEGIN (RSA|OPENSSH|DSA|EC) PRIVATE KEY---'
@@ -36,6 +37,9 @@ declare -A RXS=(
 
 RUN_TRUFFLEHOG=0
 RUN_GIT_HISTORY=0
+
+# Default value for the optional branch name argument
+DEFAULT_BRANCH="main"
 
 info() {
   printf '%s\n' "${BOLD}${GREY}>${NO_COLOR} $*"
@@ -124,8 +128,10 @@ usage() {
 
   printf "\n%s\n" "Arguments"
   printf "\t%s\n\t\t%s\n\n" \
-         "repositories" "One or more repositories to be audited. ${BOLD}${YELLOW}you need to write the full URL path to it${NO_COLOR}" \
-         "" "examples: https://github.com/org/test.git, git@gitlab.com:org/test.git"
+         "repository" "The repository to be audited. ${BOLD}${YELLOW}you need to write the full URL path to it${NO_COLOR}" \
+         "" "examples: https://github.com/org/test.git, git@gitlab.com:org/test.git"\
+         "branch (optional)" "The name of the remote branch to be audited. If not provided, will default to the main branch" \
+         "" "example: https://github.com/org/test.git feature_branch_one"
 
   printf "\n%s\n" "Options"
   printf "\t%s\n\t\t%s\n\n" \
@@ -136,13 +142,15 @@ usage() {
 
 clone() {
     git_repo="$1"
-    temp_dir="$2"
+    git_branch="$2"
+    temp_dir="$3"
     
-    # temp line to audit the public branches
-    # git clone -b public_branch "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
+    if [ "${git_branch}" -eq "main" ]; then 
+      git clone "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
+    else 
+      git clone -b "${git_branch}" "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
+    fi
     
-    # Auditing main
-    git clone "${git_repo}" "${temp_dir}"  && completed "cloning ${git_repo} succeded" || (error "cloning ${git_repo} failed" && exit 1)
 }
 
 calculate_delta() {
@@ -157,12 +165,14 @@ audit_one() {
 
     git_url="$1"
 
+    git_branch="$2"
+
     git_repo=$(basename $git_url .git)
 
     directory=$(get_tmpdir "$git_repo")
 
     info "Cloning repository $1"
-    clone "${git_url}" "${directory}"
+    clone "${git_url}" "${git_branch}" "${directory}"
 
     printf "\n"
 
@@ -258,7 +268,11 @@ while true; do
  shift ;
 done
 
-GIT_REPOS="$*"
+# Repo to be audited
+GIT_REPO="$1"
+
+# Optional -- Branch to audit
+GIT_BRANCH="${2:-"${DEFAULT_BRANCH}"}"
 
 printf "  %s\n" "${UNDERLINE}Checking dependencies${NO_COLOR}"
 
@@ -273,7 +287,14 @@ fi
 printf '\n'
 
 printf "  %s\n" "${UNDERLINE}Configuration${NO_COLOR}"
-info "${BOLD}Repositories to be audited${NO_COLOR}: ${GREEN}${GIT_REPOS}${NO_COLOR}"
+
+info "${BOLD}Repository to be audited${NO_COLOR}: ${GREEN}${GIT_REPO}${NO_COLOR}"
+
+if [ ${GIT_BRANCH} != ${DEFAULT_BRANCH} ]; then
+  info "${BOLD}Auditing a specific branch. Branch name${NO_COLOR}: ${GREEN}${GIT_BRANCH}${NO_COLOR}"
+fi
+
+
 if [ "${RUN_TRUFFLEHOG}" -eq 1 ]; then
     info "${BOLD}Audit will run${NO_COLOR}: ${GREEN}trufflehog${NO_COLOR}"
 fi
@@ -283,7 +304,11 @@ fi
 
 printf '\n'
 
-audit_all
+# Running the audit
+info "${UNDERLINE}Audition started ${NO_COLOR}"
+info "Auditing ${ITALIC}${GIT_REPO} ${NO_COLOR}"
+
+audit_one ${GIT_REPO} ${GIT_BRANCH}
 
 completed "Audit completed!"
 
