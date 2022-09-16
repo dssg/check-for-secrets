@@ -207,7 +207,8 @@ audit_one() {
     fi
 
     if [ ${RUN_TRUFFLEHOG} -eq 1 ]; then
-        trufflehog git file:///"${directory}"
+        trufflehog --regex --entropy=false file:///"${directory}"
+        
         completed "Running trufflehog (checking for passwords, keys, etc) completed"
     fi
 
